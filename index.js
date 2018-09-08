@@ -5,7 +5,7 @@ var xda = "https://www.xda-developers.com/page/2";
 
 const app = express();
 
-app.get('/', async (req,res)=>{
+app.get('/news', async (req,res)=>{
     const result = await fetchNews(xda);
     res.send(result);
 });
