@@ -1,14 +1,9 @@
 var request = require('request-promise-native');
 var cheerio = require('cheerio');
 var URL = require('url-parse');
+var cloudscraper = require('cloudscraper');
 
-const fetchNews = (uri)=>{
-    var options = {
-        uri: uri,
-        transform: function (body) {
-            return cheerio.load(body);
-        }
-    };
+const fetchNews = (uri, done)=>{
     var last_bit = uri.split('.').pop();
     var next_uri = "";
     if(last_bit === 'com' || last_bit === 'com/'){
@@ -26,18 +21,24 @@ const fetchNews = (uri)=>{
         next_uri = 'https://www.xda-developers.com/page/' + next_num.toString();
         //console.log('next uri: ' + next_uri);
     }
-    const result = request(options).then(($)=>{
+    cloudscraper.get(uri, function(err, res, body){
+        if(err){
+            console.log("Error: " + err);
+        }
+        const $ = cheerio.load(body);
         console.log("Page title:  " + $('title').text());
         var items = $('div.thumb_hover');
         var news = [];
         for(var i = 0; i < items.length; i++){
             var att = items[i].children[1].children[1].attribs;
+            const item_url = items[i].children[1].attribs.href;
             if(att.class){
                 continue;
             }
             var news_item = {
-                image:att["data-cfsrc"],
-                title:att.alt
+                image:att.src,
+                title:att.alt,
+                link:item_url
             }
             news.push(news_item);
         }
@@ -45,12 +46,8 @@ const fetchNews = (uri)=>{
             payload:news,
             next:next_uri
         };
-        return result;
-    }).catch((err)=>{
-        console.log("Error: " + err);
+        done(result);
     });
-
-    return result;
 }
 
 module.exports = fetchNews;
